@@ -1,0 +1,40 @@
+{
+  "name": "react-example",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "start": "node dist/server.cjs",
+    "clean": "rm -rf dist server.js",
+    "lint": "tsc --noEmit",
+    "test": "tsx tests/phase1-validation.test.ts && tsx tests/decisionDNA-v2.test.ts && tsx tests/scenarioEngine-v2.test.ts && tsx tests/server-v2.test.ts && tsx tests/explanationEngine-v2.test.ts && tsx tests/frontend-integration-v2.test.ts && tsx tests/e2e-v2.test.ts && tsx tests/hardening-v2.test.ts && tsx tests/deployment-smoke.test.ts && tsx tests/unified-engine.test.ts && tsx tests/phase5c-workspace.test.ts && tsx tests/phase5d-temporal.test.ts && tsx tests/phase5e-inspection.test.ts && tsx tests/phase5f-library.test.ts && tsx tests/phase5g-polish.test.ts && tsx tests/phase6-2-experience.test.ts && tsx tests/phase6-3-library-resilience.test.ts && tsx tests/performance-regression.test.ts && tsx tests/phase6-5-product-acceptance.test.ts && tsx tests/phase6-6-product-refinement.test.ts && tsx tests/phase6-7-product-polish.test.ts && tsx tests/phase6-8-final-audit.test.ts && tsx tests/phase7-engineering-hardening.test.ts && tsx tests/phase7-2-engineering-hardening.test.ts && tsx tests/phase7-3-contract-integrity.test.ts"
+  },
+  "dependencies": {
+    "@google/genai": "^2.4.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "dotenv": "^17.2.3",
+    "esbuild": "^0.25.0",
+    "express": "^4.21.2",
+    "lightningcss": "^1.33.0",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.3"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "tailwindcss": "^4.1.14"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.62.4",
+    "@rollup/rollup-win32-x64-msvc": "^4.62.4"
+  }
+}
