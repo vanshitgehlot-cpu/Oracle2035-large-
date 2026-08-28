@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import crypto from "crypto";
-import { createServer as createViteServer } from "vite";
+
 import { GoogleGenAI, Type } from "@google/genai";
 
 import { createFutureSelfProfile, generateFutureSelfResponse } from "./src/services/futureSelfEngine";
@@ -414,6 +414,7 @@ async function startServer() {
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
