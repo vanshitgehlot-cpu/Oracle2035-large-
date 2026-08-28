@@ -18,9 +18,8 @@ import {
   V2ApiErrorCode,
 } from "./src/types/v2";
 
-async function startServer() {
+export function createApp() {
   const app = express();
-  const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
   // ============================================================================
   // 1. DEFENSIVE HTTP SECURITY HEADERS & REQUEST ID OBSERVABILITY (Phase 7)
@@ -406,6 +405,13 @@ async function startServer() {
   app.post("/api/avatar-ask", v2RateLimiter, handleAvatarAsk);
   app.post("/api/chat-future-self", v2RateLimiter, handleAvatarAsk);
 
+  return app;
+}
+
+async function startServer() {
+  const app = createApp();
+  const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -472,4 +478,9 @@ async function startServer() {
   process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 }
 
-startServer();
+// Only start the server if this script is executed directly
+if (typeof require !== 'undefined' && require.main === module) {
+  startServer();
+} else if (typeof process !== 'undefined' && process.argv[1] && process.argv[1].endsWith('server.ts')) {
+  startServer();
+}

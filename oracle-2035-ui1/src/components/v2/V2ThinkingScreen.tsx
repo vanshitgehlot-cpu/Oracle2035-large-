@@ -18,6 +18,7 @@ export const V2ThinkingScreen: React.FC<V2ThinkingScreenProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [logs, setLogs] = useState<string[]>([]);
+  const [localError, setLocalError] = useState<{ code: string; message: string; details?: Array<{ field: string; issue: string }> } | null>(null);
 
   const steps = [
     '01 Validating decision',
@@ -28,80 +29,119 @@ export const V2ThinkingScreen: React.FC<V2ThinkingScreenProps> = ({
     '06 Preparing analysis',
   ];
 
-  useEffect(() => {
-    let active = true;
+  const runAnalysis = async (active: { current: boolean }) => {
+    try {
+      setLocalError(null);
+      setCurrentStep(0);
+      sound.playPing();
+      const statementText = payload.decision.decisionStatement || '';
+      setLogs([`Decision statement: "${statementText.slice(0, 48)}${statementText.length > 48 ? '...' : ''}"`]);
 
-    const runAnalysis = async () => {
-      try {
-        sound.playPing();
-        const statementText = payload.decision.decisionStatement || '';
-        setLogs([`Decision statement: "${statementText.slice(0, 48)}${statementText.length > 48 ? '...' : ''}"`]);
+      // Launch API request immediately without artificial delay
+      const apiPromise = analyzeDecisionV2(payload);
 
-        // Launch API request immediately without artificial delay
-        const apiPromise = analyzeDecisionV2(payload);
-
-        // Smoothly progress visual indicators while computation resolves
-        const timer1 = setTimeout(() => {
-          if (active) {
-            setCurrentStep(1);
-            setLogs((prev) => [...prev, 'Evaluating 6 orthogonal Decision DNA dimensions...']);
-          }
-        }, 120);
-
-        const timer2 = setTimeout(() => {
-          if (active) {
-            setCurrentStep(2);
-            setLogs((prev) => [...prev, 'Mapping Baseline, Favorable, and Stress conditional trajectories...']);
-          }
-        }, 280);
-
-        const timer3 = setTimeout(() => {
-          if (active) {
-            setCurrentStep(3);
-            setLogs((prev) => [...prev, 'Building temporal progression milestones...']);
-          }
-        }, 440);
-
-        const response = await apiPromise;
-        clearTimeout(timer1);
-        clearTimeout(timer2);
-        clearTimeout(timer3);
-
-        if (!active) return;
-
-        if (response.success && response.data) {
-          setCurrentStep(4);
-          setLogs((prev) => [...prev, 'Deterministic SHA-256 calculation provenance sealed.']);
-          sound.playWarp();
-
-          setCurrentStep(5);
-          setLogs((prev) => [...prev, 'Preparing analysis workspace.']);
-
-          // Transition directly to analysis
-          onSuccess(response.data);
-        } else {
-          sound.playClick();
-          onError(response.error || {
-            code: 'SERVER_ERROR',
-            message: 'Server failed to calculate deterministic decision analysis.',
-          });
+      // Smoothly progress visual indicators while computation resolves
+      const timer1 = setTimeout(() => {
+        if (active.current) {
+          setCurrentStep(1);
+          setLogs((prev) => [...prev, 'Evaluating 6 orthogonal Decision DNA dimensions...']);
         }
-      } catch (err: unknown) {
+      }, 120);
+
+      const timer2 = setTimeout(() => {
+        if (active.current) {
+          setCurrentStep(2);
+          setLogs((prev) => [...prev, 'Mapping Baseline, Favorable, and Stress conditional trajectories...']);
+        }
+      }, 280);
+
+      const timer3 = setTimeout(() => {
+        if (active.current) {
+          setCurrentStep(3);
+          setLogs((prev) => [...prev, 'Building temporal progression milestones...']);
+        }
+      }, 440);
+
+      const response = await apiPromise;
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+
+      if (!active.current) return;
+
+      if (response.success && response.data) {
+        setCurrentStep(4);
+        setLogs((prev) => [...prev, 'Deterministic SHA-256 calculation provenance sealed.']);
+        sound.playWarp();
+
+        setCurrentStep(5);
+        setLogs((prev) => [...prev, 'Preparing analysis workspace.']);
+
+        // Transition directly to analysis
+        onSuccess(response.data);
+      } else {
         sound.playClick();
-        const message = err instanceof Error ? err.message : 'Unexpected runtime execution error';
-        onError({
-          code: 'CLIENT_RUNTIME_ERROR',
-          message: `Analysis execution failed: ${message}`,
+        console.error("Analysis API failed:", response.error);
+        setLocalError(response.error || {
+          code: 'SERVER_ERROR',
+          message: 'Server failed to calculate deterministic decision analysis.',
         });
       }
-    };
+    } catch (err: unknown) {
+      sound.playClick();
+      console.error("Analysis runtime error:", err);
+      const message = err instanceof Error ? err.message : 'Unexpected runtime execution error';
+      setLocalError({
+        code: 'CLIENT_RUNTIME_ERROR',
+        message: `Analysis execution failed: ${message}`,
+      });
+    }
+  };
 
-    runAnalysis();
-
+  useEffect(() => {
+    const active = { current: true };
+    runAnalysis(active);
     return () => {
-      active = false;
+      active.current = false;
     };
-  }, [payload, onSuccess, onError]);
+  }, [payload, onSuccess]);
+
+  if (localError) {
+    return (
+      <div className="relative min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-4 py-16 max-w-xl mx-auto selection:bg-[#38BDF8]/20">
+        <div className="w-full bg-[#11141A] border border-red-500/20 rounded-2xl p-6 text-center space-y-6">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto">
+            <Lock className="w-6 h-6 text-red-400" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-red-400">ANALYSIS FAILED</h2>
+            <p className="text-sm text-gray-400">{localError.message}</p>
+            {localError.details && (
+              <ul className="text-xs text-red-400/80 mt-2 text-left bg-red-500/5 p-3 rounded text-mono">
+                {localError.details.map((d, i) => (
+                  <li key={i}>• {d.field}: {d.issue}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="flex gap-4 justify-center pt-4">
+            <button
+              onClick={() => onError(localError)}
+              className="px-6 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-mono"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => runAnalysis({ current: true })}
+              className="px-6 py-2 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors text-sm font-mono"
+            >
+              Retry Analysis
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-4 py-16 max-w-xl mx-auto selection:bg-[#38BDF8]/20">
