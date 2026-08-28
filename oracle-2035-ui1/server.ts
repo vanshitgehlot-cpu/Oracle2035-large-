@@ -479,8 +479,7 @@ async function startServer() {
   process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 }
 
-// Only start the server if this script is executed directly
-if (typeof require !== 'undefined' && require.main === module) {
+if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
   startServer();
 } else if (typeof process !== 'undefined' && process.argv[1] && process.argv[1].endsWith('server.ts')) {
   startServer();
