@@ -1,4 +1,7 @@
-import { createApp } from '../server';
+import { createRequire } from 'module';
 
-const app = createApp();
+const require = createRequire(import.meta.url);
+const serverModule = require('../dist/server.cjs');
+
+const app = serverModule.createApp();
 export default app;
